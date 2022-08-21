@@ -12,17 +12,21 @@ async function routes(fastify/* , options */) {
         type: 'object',
         properties: {
           email: { type: 'string' },
+          username: { type: 'string' },
           password: { type: 'string' },
         },
       },
     },
     handler: async (request, reply) => {
       try {
-        const { email, password } = request.body;
+        const { email, username, password } = request.body;
 
-        const user = await prisma.user.findUnique({
+        const user = await prisma.user.findFirst({
           where: {
-            email,
+            OR: [
+              { email },
+              { username },
+            ],
           },
         });
 
@@ -31,8 +35,9 @@ async function routes(fastify/* , options */) {
         if (comparison) {
           const payload = {
             email: user.email,
+            username: user.username,
           };
-          const token = fastify.jwt.sign({ payload });
+          const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
 
           reply
             .setCookie('token', token, {
