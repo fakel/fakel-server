@@ -21,6 +21,7 @@ fastify.register(require('./plugins/jwt'));
 fastify.register(require('./routes/signup'));
 fastify.register(require('./routes/login'));
 fastify.register(require('./routes/report'));
+fastify.register(require('./routes/summoner'));
 
 const start = async () => {
   try {
