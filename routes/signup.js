@@ -14,17 +14,19 @@ async function routes(fastify/* , options */) {
         type: 'object',
         properties: {
           email: { type: 'string' },
+          username: { type: 'string' },
           password: { type: 'string' },
         },
       },
     },
     handler: async (request, reply) => {
       try {
-        const { email, password } = request.body;
+        const { email, username, password } = request.body;
         const encryptedPassword = await bcrypt.hash(password, saltRounds);
         await prisma.user.create({
           data: {
             email,
+            username,
             password: encryptedPassword,
           },
         });
@@ -32,7 +34,7 @@ async function routes(fastify/* , options */) {
         const payload = {
           email,
         };
-        const token = fastify.jwt.sign({ payload });
+        const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
 
         reply
           .setCookie('token', token, {
