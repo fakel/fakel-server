@@ -49,7 +49,10 @@ async function routes(fastify/* , options */) {
 
         const { user } = request;
 
-        console.log('user', user);
+        if (comment.length > 250) {
+          reply.send({ error: 'Comment is too long' });
+          return;
+        }
 
         const reputationChanges = deltas.reduce((operation, tag) => {
           if (request.body[tag]) {
