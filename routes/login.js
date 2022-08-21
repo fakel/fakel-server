@@ -30,6 +30,11 @@ async function routes(fastify/* , options */) {
           },
         });
 
+        if (!user) {
+          reply.code(401).send('User not found');
+          return;
+        }
+
         const comparison = await bcrypt.compare(password, user.password);
 
         if (comparison) {
@@ -47,7 +52,7 @@ async function routes(fastify/* , options */) {
           reply.send(new Error('Email and password does not match'));
         }
       } catch (error) {
-        reply.send(error);
+        reply.send(new Error('Something went wrong'));
       }
     },
   });

@@ -41,7 +41,7 @@ async function routes(fastify/* , options */) {
           .code(200)
           .send('Welcome!');
       } catch (error) {
-        reply.send(error);
+        reply.send(new Error('Something went wrong'));
       }
     },
   });
