@@ -3,6 +3,7 @@ const fastify = require('fastify')({ logger: true });
 fastify.register(require('@fastify/cookie'));
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./routes/signup'));
+fastify.register(require('./routes/login'));
 
 const start = async () => {
   try {
