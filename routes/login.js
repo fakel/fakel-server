@@ -40,12 +40,7 @@ async function routes(fastify/* , options */) {
           const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
 
           reply
-            .setCookie('token', token, {
-              domain: 'fakel.lol',
-              path: '/',
-              secure: true, // send cookie over HTTPS only
-              httpOnly: true,
-            })
+            .send({ Authorization: token })
             .code(200)
             .send('Welcome!');
         } else {
