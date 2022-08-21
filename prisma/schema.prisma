@@ -56,6 +56,7 @@ model Summoner {
 
   displayName  String
   internalName String
+  region   String
 
   reports Report[]
 
