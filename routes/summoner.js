@@ -35,7 +35,7 @@ async function routes(fastify/* , options */) {
         if (summoner) {
           reply.send(summoner);
         } else {
-          reply.send({ error: 'Summoner not found' });
+          reply.status(404).send({ error: 'Summoner not found' });
         }
       } catch (err) {
         reply.send(err);
@@ -49,12 +49,38 @@ async function routes(fastify/* , options */) {
     onRequest: [fastify.authenticate],
     handler: async (request, reply) => {
       try {
-        const { puuid, displayName, internalName } = request.body;
+        const {
+          puuid,
+          displayName,
+          internalName,
+          region,
+          self = false,
+        } = request.body;
+
+        const { user } = request;
+
         const summoner = await prisma.summoner.create({
           data: {
             puuid,
             displayName,
             internalName,
+            region,
+            user: self ? {
+              connect: {
+                email: user.payload.email,
+              },
+            } : undefined,
+          },
+          select: {
+            puuid: true,
+            createdAt: true,
+            displayName: true,
+            internalName: true,
+            afk: true,
+            inter: true,
+            troll: true,
+            flamer: true,
+            good: true,
           },
         });
 
