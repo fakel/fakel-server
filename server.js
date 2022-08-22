@@ -1,5 +1,12 @@
 require('dotenv').config();
-const fastify = require('fastify')({ logger: true });
+const fastify = require('fastify')({
+  logger: {
+    level: 'debug',
+    transport: {
+      target: 'pino-pretty',
+    },
+  },
+});
 const cors = require('@fastify/cors');
 
 fastify.register(cors, (/* instance */) => (req, callback) => {
