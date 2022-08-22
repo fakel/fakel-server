@@ -76,27 +76,28 @@ async function routes(fastify/* , options */) {
               puuid: summonerId,
               displayName,
               internalName,
+              region,
               ...newSummonerValues,
             },
           }),
           prisma.report.create({
             data: {
-              gameId,
-              region,
-              summoner: {
-                connect: {
-                  puuid: summonerId,
-                },
-              },
               comment,
               afk,
               inter,
               troll,
               flamer,
               good,
+              gameId,
+              region,
               author: {
                 connect: {
                   email: user.payload.email,
+                },
+              },
+              summoner: {
+                connect: {
+                  puuid: summonerId,
                 },
               },
             },
