@@ -3,9 +3,9 @@ require('./db/relations');
 const fastify = require('fastify')({
   logger: {
     level: 'debug',
-    transport: {
-      target: 'pino-pretty',
-    },
+    // transport: {
+    //   target: 'pino-pretty',
+    // },
   },
 });
 const cors = require('@fastify/cors');
