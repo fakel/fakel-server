@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "create-db": "NODE_ENV=development node db/sequelize.js",
+    "pack": "rm -f server.zip && zip -r server.zip .  -x '*node_modules*' -x '*.git*' -x '.env' -x 'test/*' -x 'logs/*' -x 'coverage/*'",
     "start": "node server.js",
     "test": "vitest",
     "coverage": "vitest run --coverage"
