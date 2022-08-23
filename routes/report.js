@@ -1,4 +1,6 @@
-const prisma = require('../utils/prisma');
+const crypto = require('crypto');
+const sequelize = require('../db/sequelize');
+const { User, Report, Summoner } = require('../db/relations');
 
 const deltas = [
   'afk',
@@ -54,10 +56,10 @@ async function routes(fastify/* , options */) {
           return;
         }
 
-        const reputationChanges = deltas.reduce((operation, tag) => {
+        const reputationChanges = deltas.reduce((changes, tag) => {
           if (request.body[tag]) {
-            return { ...operation, [tag]: { increment: 1 } };
-          } return operation;
+            return { ...changes, [tag]: sequelize.literal(`${tag} + 1`) };
+          } return changes;
         }, {});
 
         const newSummonerValues = deltas.reduce((operation, tag) => {
@@ -66,56 +68,63 @@ async function routes(fastify/* , options */) {
           } return { ...operation, [tag]: 0 };
         }, {});
 
-        await prisma.$transaction([
-          prisma.summoner.upsert({
-            where: {
-              puuid: summonerId,
-            },
-            update: reputationChanges,
-            create: {
-              puuid: summonerId,
+        const result = await sequelize.transaction(async (t) => {
+          const userInfo = await User.findOne({
+            where: { email: user.payload.email },
+            transaction: t,
+          });
+
+          if (!userInfo) {
+            throw new Error('User not found');
+          }
+
+          const summoner = await Summoner.findOne({
+            where: { id: summonerId },
+          }, { transaction: t });
+
+          if (summoner) {
+            await summoner.update(reputationChanges, { transaction: t });
+          } else {
+            await Summoner.create({
+              id: summonerId,
               displayName,
               internalName,
               region,
               ...newSummonerValues,
-            },
-          }),
-          prisma.report.create({
-            data: {
-              comment,
-              afk,
-              inter,
-              troll,
-              flamer,
-              good,
-              gameId,
-              region,
-              author: {
-                connect: {
-                  email: user.payload.email,
-                },
-              },
-              summoner: {
-                connect: {
-                  puuid: summonerId,
-                },
-              },
-            },
-          }),
-          prisma.user.update({
-            where: {
-              email: user.payload.email,
-            },
-            data: {
-              reportsDone: {
-                increment: 1,
-              },
-            },
-          }),
-        ]);
+            }, { transaction: t });
+          }
+
+          const toHash = `${region}-${gameId}-${summonerId}-${userInfo.get('id')}`;
+
+          const hash = crypto.createHash('md5').update(toHash).digest('base64');
+
+          const report = await Report.create({
+            id: hash,
+            comment,
+            afk,
+            inter,
+            troll,
+            flamer,
+            good,
+            gameId,
+            region,
+            userId: userInfo.get('id'),
+            summonerId,
+          }, { transaction: t });
+
+          request.log.info(JSON.stringify(report, null, 2));
+
+          await userInfo.increment({ reportsDone: 1 }, { transaction: t });
+        });
+
+        request.log.info(JSON.stringify(result, null, 2));
 
         reply.send('Reported!');
-      } catch (error) {
+      } catch ({ stack, message }) {
+        request.log.debug(JSON.stringify({
+          stack,
+          message,
+        }, null, 2));
         reply.send(new Error('Something went wrong'));
       }
     },

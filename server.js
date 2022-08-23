@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./db/relations');
 const fastify = require('fastify')({
   logger: {
     level: 'debug',
@@ -23,6 +24,8 @@ fastify.register(cors, (/* instance */) => (req, callback) => {
   // callback expects two parameters: error and options
   callback(null, corsOptions);
 });
+
+fastify.get('/', (_, reply) => reply.send({ hello: 'Dodge Them All, is alive!' }));
 
 fastify.register(require('./plugins/jwt'));
 fastify.register(require('./routes/signup'));

@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const prisma = require('../utils/prisma');
+const User = require('../db/models/User');
 
 const saltRounds = 10;
 
@@ -20,25 +20,33 @@ async function routes(fastify/* , options */) {
     handler: async (request, reply) => {
       try {
         const { email, username, password } = request.body;
+
+        // Normalize data
+        const emailLower = email.toLowerCase();
+        const usernameLower = username.toLowerCase();
+
         const encryptedPassword = await bcrypt.hash(password, saltRounds);
-        await prisma.user.create({
-          data: {
-            email,
-            username,
-            password: encryptedPassword,
-          },
+        const user = await User.create({
+          emailLower,
+          usernameLower,
+          password: encryptedPassword,
         });
 
+        request.log.debug(`User created ${JSON.stringify(user.toJSON())}`);
+
         const payload = {
-          email,
+          emailLower,
         };
         const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
 
         reply
           .send({ Authorization: token })
-          .code(200)
-          .send('Welcome!');
-      } catch (error) {
+          .code(200);
+      } catch ({ stack, message }) {
+        request.log.debug(JSON.stringify({
+          stack,
+          message,
+        }, null, 2));
         reply.send(new Error('Something went wrong'));
       }
     },

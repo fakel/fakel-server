@@ -1,5 +1,6 @@
+const { Op } = require('sequelize');
 const bcrypt = require('bcrypt');
-const prisma = require('../utils/prisma');
+const User = require('../db/models/User');
 
 async function routes(fastify/* , options */) {
   fastify.route({
@@ -19,14 +20,20 @@ async function routes(fastify/* , options */) {
       try {
         const { email, username, password } = request.body;
 
-        const user = await prisma.user.findFirst({
+        // Normalize data
+        const emailLower = email.toLowerCase();
+        const usernameLower = username.toLowerCase();
+
+        const user = await User.findOne({
           where: {
-            OR: [
-              { email },
-              { username },
+            [Op.or]: [
+              { emailLower },
+              { usernameLower },
             ],
           },
         });
+
+        request.log.debug(`User found  ${JSON.stringify(user.toJSON())}`);
 
         if (!user) {
           reply.code(401).send('User not found');
@@ -44,12 +51,16 @@ async function routes(fastify/* , options */) {
 
           reply
             .send({ Authorization: token })
-            .code(200)
-            .send('Welcome!');
-        } else {
-          reply.send(new Error('Email and password does not match'));
+            .code(200);
+          return;
         }
-      } catch (error) {
+        reply.send(new Error('Email and password does not match'));
+        return;
+      } catch ({ stack, message }) {
+        request.log.debug(JSON.stringify({
+          stack,
+          message,
+        }, null, 2));
         reply.send(new Error('Something went wrong'));
       }
     },
