@@ -27,8 +27,8 @@ async function routes(fastify/* , options */) {
         const user = await User.findOne({
           where: {
             [Op.or]: [
-              { emailLower },
-              { usernameLower },
+              { email: emailLower },
+              { username: usernameLower },
             ],
           },
         });

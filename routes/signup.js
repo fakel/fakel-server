@@ -27,8 +27,8 @@ async function routes(fastify/* , options */) {
 
         const encryptedPassword = await bcrypt.hash(password, saltRounds);
         const user = await User.create({
-          emailLower,
-          usernameLower,
+          email: emailLower,
+          username: usernameLower,
           password: encryptedPassword,
         });
 
