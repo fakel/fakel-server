@@ -70,10 +70,15 @@ async function routes(fastify/* , options */) {
       }, {});
 
       const result = await sequelize.transaction(async (t) => {
-        const userInfo = await User.findOne({
-          where: { email: user.payload.email },
-          transaction: t,
-        });
+        const userInfo = await User.findOne(
+          {
+            where: { email: user.payload.email },
+          },
+          {
+            transaction: t,
+            logging: request.log.info,
+          },
+        );
 
         if (!userInfo) {
           const error = new Error('User not found');
@@ -85,10 +90,16 @@ async function routes(fastify/* , options */) {
 
         const summoner = await Summoner.findOne({
           where: { id: summonerId },
-        }, { transaction: t });
+        }, {
+          transaction: t,
+          logging: request.log.info,
+        });
 
         if (summoner) {
-          await summoner.update(reputationChanges, { transaction: t });
+          await summoner.update(reputationChanges, {
+            transaction: t,
+            logging: request.log.info,
+          });
         } else {
           await Summoner.create({
             id: summonerId,
@@ -96,7 +107,10 @@ async function routes(fastify/* , options */) {
             internalName,
             region,
             ...newSummonerValues,
-          }, { transaction: t });
+          }, {
+            transaction: t,
+            logging: request.log.info,
+          });
         }
 
         const toHash = `${region}-${gameId}-${summonerId}-${userId}`;
@@ -115,11 +129,19 @@ async function routes(fastify/* , options */) {
           region,
           userId,
           summonerId,
-        }, { transaction: t });
+        }, {
+          transaction: t,
+          logging: request.log.info,
+        });
 
         request.log.info(report.toJSON());
 
-        await userInfo.increment({ reportsDone: 1 }, { transaction: t });
+        await userInfo.increment({
+          reportsDone: 1,
+        }, {
+          transaction: t,
+          logging: request.log.info,
+        });
       });
 
       request.log.info(inspect(result));

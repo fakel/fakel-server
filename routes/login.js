@@ -30,6 +30,8 @@ async function routes(fastify/* , options */) {
             { username: usernameLower },
           ],
         },
+      }, {
+        logging: request.log.info,
       });
 
       request.log.debug(user.toJSON());
