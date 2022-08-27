@@ -33,9 +33,10 @@ async function routes(fastify/* , options */) {
 
       request.log.debug(user.toJSON());
 
-        const payload = {
-          emailLower,
-        };
+      const payload = {
+        email: emailLower,
+        username: usernameLower,
+      };
 
       const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
 
