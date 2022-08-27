@@ -17,52 +17,46 @@ async function routes(fastify/* , options */) {
       },
     },
     handler: async (request, reply) => {
-      try {
-        const { email, username, password } = request.body;
+      const { email, username, password } = request.body;
 
-        // Normalize data
-        const emailLower = email.toLowerCase();
-        const usernameLower = username.toLowerCase();
+      // Normalize data
+      const emailLower = email.toLowerCase();
+      const usernameLower = username.toLowerCase();
 
-        const user = await User.findOne({
-          where: {
-            [Op.or]: [
-              { email: emailLower },
-              { username: usernameLower },
-            ],
-          },
-        });
+      const user = await User.findOne({
+        where: {
+          [Op.or]: [
+            { email: emailLower },
+            { username: usernameLower },
+          ],
+        },
+      });
 
-        request.log.debug(`User found  ${JSON.stringify(user.toJSON())}`);
+      request.log.debug(user.toJSON());
 
-        if (!user) {
-          reply.code(401).send('User not found');
-          return;
-        }
-
-        const comparison = await bcrypt.compare(password, user.password);
-
-        if (comparison) {
-          const payload = {
-            email: user.email,
-            username: user.username,
-          };
-          const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
-
-          reply
-            .send({ Authorization: token })
-            .code(200);
-          return;
-        }
-        reply.send(new Error('Email and password does not match'));
-        return;
-      } catch ({ stack, message }) {
-        request.log.debug(JSON.stringify({
-          stack,
-          message,
-        }, null, 2));
-        reply.send(new Error('Something went wrong'));
+      if (!user) {
+        const error = new Error('User not found');
+        error.statusCode = 404;
+        throw error;
       }
+
+      const comparison = await bcrypt.compare(password, user.password);
+
+      if (comparison) {
+        const payload = {
+          email: user.email,
+          username: user.username,
+        };
+        const token = fastify.jwt.sign({ payload }, { expiresIn: '24h' });
+
+        reply
+          .send({ Authorization: token });
+        return;
+      }
+
+      const error = new Error('Email/Username and password does not match');
+      error.statusCode = 400;
+      throw error;
     },
   });
 }

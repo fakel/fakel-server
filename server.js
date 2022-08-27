@@ -1,8 +1,10 @@
 require('dotenv').config();
+const { inspect } = require('util');
 require('./db/relations');
 const fastify = require('fastify')({
   logger: {
     level: 'debug',
+    file: `logs-${Date.now()}.log`,
     // transport: {
     //   target: 'pino-pretty',
     // },
@@ -23,6 +25,23 @@ fastify.register(cors, (/* instance */) => (req, callback) => {
 
   // callback expects two parameters: error and options
   callback(null, corsOptions);
+});
+
+fastify.setErrorHandler((error, request, reply) => {
+  request.log.debug(inspect({
+    statusCode: error.statusCode,
+    message: error.message,
+    stack: error.stack,
+    request,
+  }));
+
+  if (error.statusCode === 500) {
+    reply.send(new Error('Something went wrong'));
+  } else {
+    reply
+      .status(error.statusCode)
+      .send(error.message);
+  }
 });
 
 fastify.get('/', (_, reply) => reply.send({ hello: 'Dodge Them All, is alive!' }));

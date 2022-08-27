@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { inspect } = require('util');
 const sequelize = require('../db/sequelize');
 const { User, Report, Summoner } = require('../db/relations');
 
@@ -34,99 +35,96 @@ async function routes(fastify/* , options */) {
     },
     onRequest: [fastify.authenticate],
     handler: async (request, reply) => {
-      try {
-        const {
-          gameId,
-          region,
-          summonerId,
-          displayName,
-          internalName,
+      const {
+        gameId,
+        region,
+        summonerId,
+        displayName,
+        internalName,
+        comment,
+        afk,
+        inter,
+        troll,
+        flamer,
+        good,
+      } = request.body;
+
+      const { user } = request;
+
+      if (comment.length > 250) {
+        const error = new Error('Comment is too long');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const reputationChanges = deltas.reduce((changes, tag) => {
+        if (request.body[tag]) {
+          return { ...changes, [tag]: sequelize.literal(`${tag} + 1`) };
+        } return changes;
+      }, {});
+
+      const newSummonerValues = deltas.reduce((operation, tag) => {
+        if (request.body[tag]) {
+          return { ...operation, [tag]: 1 };
+        } return { ...operation, [tag]: 0 };
+      }, {});
+
+      const result = await sequelize.transaction(async (t) => {
+        const userInfo = await User.findOne({
+          where: { email: user.payload.email },
+          transaction: t,
+        });
+
+        if (!userInfo) {
+          const error = new Error('User not found');
+          error.statusCode = 404;
+          throw error;
+        }
+
+        const userId = userInfo.get('id');
+
+        const summoner = await Summoner.findOne({
+          where: { id: summonerId },
+        }, { transaction: t });
+
+        if (summoner) {
+          await summoner.update(reputationChanges, { transaction: t });
+        } else {
+          await Summoner.create({
+            id: summonerId,
+            displayName,
+            internalName,
+            region,
+            ...newSummonerValues,
+          }, { transaction: t });
+        }
+
+        const toHash = `${region}-${gameId}-${summonerId}-${userId}`;
+
+        const hash = crypto.createHash('md5').update(toHash).digest('base64');
+
+        const report = await Report.create({
+          id: hash,
           comment,
           afk,
           inter,
           troll,
           flamer,
           good,
-        } = request.body;
+          gameId,
+          region,
+          userId,
+          summonerId,
+        }, { transaction: t });
 
-        const { user } = request;
+        request.log.info(report.toJSON());
 
-        if (comment.length > 250) {
-          reply.send({ error: 'Comment is too long' });
-          return;
-        }
+        await userInfo.increment({ reportsDone: 1 }, { transaction: t });
+      });
 
-        const reputationChanges = deltas.reduce((changes, tag) => {
-          if (request.body[tag]) {
-            return { ...changes, [tag]: sequelize.literal(`${tag} + 1`) };
-          } return changes;
-        }, {});
+      request.log.info(inspect(result));
 
-        const newSummonerValues = deltas.reduce((operation, tag) => {
-          if (request.body[tag]) {
-            return { ...operation, [tag]: 1 };
-          } return { ...operation, [tag]: 0 };
-        }, {});
-
-        const result = await sequelize.transaction(async (t) => {
-          const userInfo = await User.findOne({
-            where: { email: user.payload.email },
-            transaction: t,
-          });
-
-          if (!userInfo) {
-            throw new Error('User not found');
-          }
-
-          const summoner = await Summoner.findOne({
-            where: { id: summonerId },
-          }, { transaction: t });
-
-          if (summoner) {
-            await summoner.update(reputationChanges, { transaction: t });
-          } else {
-            await Summoner.create({
-              id: summonerId,
-              displayName,
-              internalName,
-              region,
-              ...newSummonerValues,
-            }, { transaction: t });
-          }
-
-          const toHash = `${region}-${gameId}-${summonerId}-${userInfo.get('id')}`;
-
-          const hash = crypto.createHash('md5').update(toHash).digest('base64');
-
-          const report = await Report.create({
-            id: hash,
-            comment,
-            afk,
-            inter,
-            troll,
-            flamer,
-            good,
-            gameId,
-            region,
-            userId: userInfo.get('id'),
-            summonerId,
-          }, { transaction: t });
-
-          request.log.info(JSON.stringify(report, null, 2));
-
-          await userInfo.increment({ reportsDone: 1 }, { transaction: t });
-        });
-
-        request.log.info(JSON.stringify(result, null, 2));
-
-        reply.send('Reported!');
-      } catch ({ stack, message }) {
-        request.log.debug(JSON.stringify({
-          stack,
-          message,
-        }, null, 2));
-        reply.send(new Error('Something went wrong'));
-      }
+      reply.send('Reported!');
     },
   });
 }
