@@ -36,6 +36,8 @@ async function routes(fastify/* , options */) {
           }],
       });
 
+      request.log.debug({ summoner: summoner.toJSON() });
+
       if (summoner) {
         reply.send(summoner);
       } else {
@@ -85,9 +87,16 @@ async function routes(fastify/* , options */) {
         ],
       });
 
-      request.log.debug(created, summoner.toJSON());
+      request.log.debug({
+        created,
+        summoner: summoner.toJSON(),
+      });
 
-      reply.send(summoner);
+      if (created) {
+        reply.code(201).send(summoner);
+      } else {
+        reply.code(200).send(summoner);
+      }
     },
   });
 }

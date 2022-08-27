@@ -37,12 +37,12 @@ fastify.setErrorHandler((error, request, reply) => {
   // eslint-disable-next-line no-param-reassign
   if (!error.statusCode) error.statusCode = 500;
 
-  request.log.debug(inspect({
+  request.log.debug({
     statusCode: error.statusCode,
     message: error.message,
     stack: error.stack,
     request,
-  }));
+  });
 
   if (error.statusCode === 500) {
     reply.send(new Error('Something went wrong'));

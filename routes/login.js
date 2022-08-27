@@ -32,7 +32,7 @@ async function routes(fastify/* , options */) {
         },
       });
 
-      request.log.debug(user.toJSON());
+      request.log.debug({ user: user.toJSON() });
 
       if (!user) {
         const error = new Error('User not found');

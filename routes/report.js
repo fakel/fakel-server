@@ -129,7 +129,7 @@ async function routes(fastify/* , options */) {
           transaction: t,
         });
 
-        request.log.info(report.toJSON());
+        request.log.info({ report: report.toJSON() });
 
         await userInfo.increment({
           reportsDone: 1,
@@ -138,7 +138,7 @@ async function routes(fastify/* , options */) {
         });
       });
 
-      request.log.info(inspect(result));
+      request.log.info({ result: inspect(result) });
 
       reply.send('Reported!');
     },
