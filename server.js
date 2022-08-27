@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { inspect } = require('util');
-require('./db/relations');
+const cors = require('@fastify/cors');
 const fastify = require('fastify')({
   logger: {
     level: 'debug',
@@ -10,7 +10,13 @@ const fastify = require('fastify')({
     // },
   },
 });
-const cors = require('@fastify/cors');
+
+const sequelize = require('./db/sequelize');
+require('./db/relations');
+
+sequelize.options.logging = (...args) => {
+  fastify.log.info(inspect(args));
+};
 
 fastify.register(cors, (/* instance */) => (req, callback) => {
   const corsOptions = {
@@ -28,6 +34,9 @@ fastify.register(cors, (/* instance */) => (req, callback) => {
 });
 
 fastify.setErrorHandler((error, request, reply) => {
+  // eslint-disable-next-line no-param-reassign
+  if (!error.statusCode) error.statusCode = 500;
+
   request.log.debug(inspect({
     statusCode: error.statusCode,
     message: error.message,

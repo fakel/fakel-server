@@ -83,7 +83,6 @@ async function routes(fastify/* , options */) {
           'flamer',
           'good',
         ],
-        logging: request.log.info,
       });
 
       request.log.debug(created, summoner.toJSON());

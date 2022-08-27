@@ -76,7 +76,6 @@ async function routes(fastify/* , options */) {
           },
           {
             transaction: t,
-            logging: request.log.info,
           },
         );
 
@@ -92,13 +91,11 @@ async function routes(fastify/* , options */) {
           where: { id: summonerId },
         }, {
           transaction: t,
-          logging: request.log.info,
         });
 
         if (summoner) {
           await summoner.update(reputationChanges, {
             transaction: t,
-            logging: request.log.info,
           });
         } else {
           await Summoner.create({
@@ -109,7 +106,6 @@ async function routes(fastify/* , options */) {
             ...newSummonerValues,
           }, {
             transaction: t,
-            logging: request.log.info,
           });
         }
 
@@ -131,7 +127,6 @@ async function routes(fastify/* , options */) {
           summonerId,
         }, {
           transaction: t,
-          logging: request.log.info,
         });
 
         request.log.info(report.toJSON());
@@ -140,7 +135,6 @@ async function routes(fastify/* , options */) {
           reportsDone: 1,
         }, {
           transaction: t,
-          logging: request.log.info,
         });
       });
 

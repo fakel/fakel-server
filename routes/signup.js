@@ -1,4 +1,5 @@
 const bcrypt = require('bcrypt');
+const { Op } = require('sequelize');
 const User = require('../db/models/User');
 
 const saltRounds = 10;
@@ -24,13 +25,26 @@ async function routes(fastify/* , options */) {
       const emailLower = email.toLowerCase();
       const usernameLower = username.toLowerCase();
 
+      const prevUser = await User.findOne({
+        where: {
+          [Op.or]: [
+            { email: emailLower },
+            { username: usernameLower },
+          ],
+        },
+      });
+
+      if (prevUser) {
+        const error = new Error('User already exists');
+        error.statusCode = 400;
+        throw error;
+      }
+
       const encryptedPassword = await bcrypt.hash(password, saltRounds);
       const user = await User.create({
         email: emailLower,
         username: usernameLower,
         password: encryptedPassword,
-      }, {
-        logging: request.log.info,
       });
 
       request.log.debug(user.toJSON());
