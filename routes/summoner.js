@@ -65,26 +65,27 @@ async function routes(fastify/* , options */) {
         where: { email: user.payload.email },
       });
 
-        const summoner = await Summoner.create({
-          id,
-          displayName,
-          internalName,
-          region,
-          user: self ? userInfo.get('id') : undefined,
-        }, {
-          attributes: [
-            'id',
-            'createdAt',
-            'displayName',
-            'internalName',
-            'afk',
-            'inter',
-            'troll',
-            'flamer',
-            'good',
-          ],
-        });
+      const [summoner, created] = await Summoner.upsert({
+        id,
+        displayName,
+        internalName,
+        region,
+        user: self ? userInfo.get('id') : undefined,
+      }, {
+        attributes: [
+          'id',
+          'createdAt',
+          'displayName',
+          'internalName',
+          'afk',
+          'inter',
+          'troll',
+          'flamer',
+          'good',
+        ],
+      });
 
+      request.log.debug(created, summoner.toJSON());
 
       reply.send(summoner);
     },
