@@ -47,7 +47,7 @@ async function routes(fastify/* , options */) {
         password: encryptedPassword,
       });
 
-      request.log.debug({ user: user.toJSON() });
+      request.log.debug({ user: user ? user.toJSON() : 'Not found' });
 
       const payload = {
         email: emailLower,

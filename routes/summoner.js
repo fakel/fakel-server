@@ -36,7 +36,7 @@ async function routes(fastify/* , options */) {
           }],
       });
 
-      request.log.debug({ summoner: summoner.toJSON() });
+      request.log.debug({ summoner: summoner ? summoner.toJSON() : 'Not found' });
 
       if (summoner) {
         reply.send(summoner);
