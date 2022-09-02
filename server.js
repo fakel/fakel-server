@@ -33,6 +33,17 @@ fastify.register(cors, (/* instance */) => (req, callback) => {
   callback(null, corsOptions);
 });
 
+let timeout;
+
+fastify.addHook('onRequest', (request, reply, done) => {
+  clearTimeout(timeout);
+  timeout = setTimeout(() => {
+    request.log.info('No more requests after 10 minutes, exit process');
+    process.exit(0);
+  }, 10 * 60 * 1000);
+  done();
+});
+
 fastify.setErrorHandler((error, request, reply) => {
   // eslint-disable-next-line no-param-reassign
   if (!error.statusCode) error.statusCode = 500;
